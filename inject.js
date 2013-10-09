@@ -7,5 +7,5 @@ if (index > -1) {
 
 params += '&from=' + encodeURIComponent(url);
 
-var redirect = chrome.extension.getURL('popup.html');
+var redirect = chrome.extension.getURL('socialjs/popup.html');
 window.location = redirect + params;

@@ -154,7 +154,7 @@
     loadModule = function( moduleName ){
         var script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'modules/' + moduleName + '.js';
+        script.src = 'socialjs/modules/' + moduleName + '.js';
         document.head.appendChild( script );
         
         _state.module_loaded.push(moduleName);
