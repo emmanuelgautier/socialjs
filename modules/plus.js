@@ -100,8 +100,34 @@ social.addModule("plus", null, {
         };
     },
 
-    api: {
+    parser: {
+        person: function(json){
+            json = JSON.parse(json);
+            
+            var person = {};
 
+            person.id           = json.id;
+            person.name         = json.name;
+            person.nickname     = json.nickname || "";
+            person.birthday     = json.birthday;
+            person.gender       = json.gender;
+            person.url          = json.url;
+            person.image        = json.image || "";
+            person.about        = json.aboutMe || "";
+            person.relationship = json.relationshipStatus || "";
+            person.urls         = json.urls || [];
+            person.organizations= json.organizations || [];
+            person.placeLived   = json.placeLived || [];
+            person.language     = json.language || "en";
+            person.age          = (json.hasOwnProperty('ageRange')) ? (json.ageRange.min + json.ageRange.max) / 2 : 0;
+            
+            console.log(person);
+            
+            return person;
+        }
+    },
+
+    api: {
         //https://developers.google.com/+/api/latest/people/get
         getPeople: function( userId ){
             return {
@@ -109,9 +135,7 @@ social.addModule("plus", null, {
                 url: "https://www.googleapis.com/plus/v1/people/" + userId + "?access_token={{a}}",
                 data_merge: null,
                 scope: true,
-                callback: function(){
-                    
-                }
+                parser: 'person'
             };
         },
         
@@ -127,10 +151,7 @@ social.addModule("plus", null, {
                     pageToken: pageToken || null,
                     access_token: '{{a}}'
                 },
-                scope: true,
-                callback: function(){
-                    
-                }
+                scope: true
             };
         },
         
@@ -144,10 +165,7 @@ social.addModule("plus", null, {
                     pageToken: pageToken || null,
                     access_token: '{{a}}'
                 },
-                scope: true,
-                callback: function(){
-                    
-                }
+                scope: true
             };
         },
 
@@ -162,10 +180,7 @@ social.addModule("plus", null, {
                    pageToken: pageToken || null,
                    access_token: '{{a}}'
                },
-               scope: current_scope === "https://www.googleapis.com/auth/plus.login",
-               callback: function(){
-                   
-               }
+               scope: current_scope === "https://www.googleapis.com/auth/plus.login"
             };
         },
 
@@ -179,10 +194,7 @@ social.addModule("plus", null, {
                   pageToken: pageToken || null,
                   access_token: '{{a}}'
               },
-              scope: true,
-              callback: function(){
-                  
-              }
+              scope: true
             };
         },
         
@@ -192,10 +204,7 @@ social.addModule("plus", null, {
                 method: "GET",
                 url: "https://www.googleapis.com/plus/v1/activities/" + activityId + "?access_token={{a}}",
                 data_merge: null,
-                scope: true,
-                callback: function(){
-                    
-                }
+                scope: true
             };
         },
         
@@ -212,10 +221,7 @@ social.addModule("plus", null, {
                     pageToken: pageToken || null,
                     access_token: '{{a}}'
                 },
-                scope: true,
-                callback: function(){
-                    
-                }
+                scope: true
             };            
         },
         
@@ -230,10 +236,7 @@ social.addModule("plus", null, {
                     sortOrder: sortOrder || null,
                     access_token: '{{a}}'
                 },
-                scope: true,
-                callback: function(){
-                    
-                }
+                scope: true
             };
         },
         
@@ -243,10 +246,7 @@ social.addModule("plus", null, {
               method: "GET",
               url: "https://www.googleapis.com/plus/v1/comments/" + commentId + "?access_token={{a}}",
               data_merge: null,
-              scope: true,
-              callback: function(){
-                  
-              }
+              scope: true
             };
         },        
         

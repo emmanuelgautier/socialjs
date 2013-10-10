@@ -505,8 +505,8 @@
             
             trigger(module, ev, callback);
         },
-        
-        api: function(api, data, callback){         
+
+        api: function(api, data, _callback){         
             var api_split = api.split('.'),
 
             module = api_split[0],
@@ -524,19 +524,26 @@
             }
 
             if(typeof data == 'function'){
-                callback = data;
+                _callback = data;
                 data = null;
             }
 
-            if(data){
-                 p = _modules[module].api[api](data);
-            } else {
-                p = _modules[module].api[api]();
-            }
+            data = data || {};
 
+            p = _modules[module].api[api](data);
             p.url = _mergeData2Url(p.url, p.data_merge).replace('{{a}}', _modules[ module ].access_token);
+            
+            var fn = function(r){
+                _data[module][api] = r.r;
 
-            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, callback );  
+                if(p.hasOwnProperty('parser') && _modules[module].parser.hasOwnProperty(p.parser)){
+                    r.r = _modules[module].parser[p.parser](r.r);
+                }
+                
+                _callback(r);
+            };
+
+            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, fn );  
         }
     };
 
