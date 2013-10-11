@@ -102,8 +102,6 @@ social.addModule("plus", null, {
 
     parser: {
         person: function(json){
-            json = JSON.parse(json);
-            
             var person = {};
 
             person.id           = json.id;
@@ -120,10 +118,22 @@ social.addModule("plus", null, {
             person.placeLived   = json.placeLived || [];
             person.language     = json.language || "en";
             person.age          = (json.hasOwnProperty('ageRange')) ? (json.ageRange.min + json.ageRange.max) / 2 : 0;
-            
-            console.log(person);
-            
+
             return person;
+        },
+
+        activity: function(json){
+            var activity = {};
+        },
+
+        activities: function(json){
+            var activities = [];
+
+            for(var i = 0, j = json.length; i < j; i += 1){
+                activities[i] = this.activity(json[i]);
+            }
+            
+            return activities;
         }
     },
 
@@ -138,7 +148,7 @@ social.addModule("plus", null, {
                 parser: 'person'
             };
         },
-        
+
         //https://developers.google.com/+/api/latest/people/search
         searchPeople: function( query, lang, maxResults, pageToken ){
             return{
@@ -151,10 +161,11 @@ social.addModule("plus", null, {
                     pageToken: pageToken || null,
                     access_token: '{{a}}'
                 },
-                scope: true
+                scope: true,
+                parser: person
             };
         },
-        
+
         //https://developers.google.com/+/api/latest/people/listByActivity
         listByActivityPeople: function( activityId, collection, maxResults, pageToken ){
             return{
@@ -194,20 +205,22 @@ social.addModule("plus", null, {
                   pageToken: pageToken || null,
                   access_token: '{{a}}'
               },
-              scope: true
+              scope: true,
+              parser: 'activities'
             };
         },
-        
+
         //https://developers.google.com/+/api/latest/activities/get
         getActivity: function( activityId ){
             return{
                 method: "GET",
                 url: "https://www.googleapis.com/plus/v1/activities/" + activityId + "?access_token={{a}}",
                 data_merge: null,
-                scope: true
+                scope: true,
+                parser: 'activity'
             };
         },
-        
+
         //https://developers.google.com/+/api/latest/activities/search
         searchActivity: function( query, lang, maxResults, orderBy, pageToken ){
             return{
@@ -221,10 +234,11 @@ social.addModule("plus", null, {
                     pageToken: pageToken || null,
                     access_token: '{{a}}'
                 },
-                scope: true
-            };            
+                scope: true,
+                parser: 'activity'
+            };
         },
-        
+
         //https://developers.google.com/+/api/latest/comments/list
         listComments: function( activityId, maxResults, pageToken, sortOrder ){
             return{
@@ -239,7 +253,7 @@ social.addModule("plus", null, {
                 scope: true
             };
         },
-        
+
         //https://developers.google.com/+/api/latest/comments/get
         getComment: function( commentId ){
             return{
@@ -248,20 +262,20 @@ social.addModule("plus", null, {
               data_merge: null,
               scope: true
             };
-        },        
-        
+        },
+
         me: function(){
             return this.getPeople( "me" );
         },
-        
+
         people: function( UserId ){
             return this.getPeople( UserId );
         },
-        
+
         activity: function( activityId ){
-            
+            return this.getActivity( activityId );
         },
-        
+
         activities: function(){
             return this.listActivities( 'public', 'me' );
         }
