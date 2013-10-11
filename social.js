@@ -372,11 +372,11 @@
         getModule: function( name ){
             return module['name'] || {};
         },
-        
+
         isModuleLoaded: function( name ){
             return in_array(name, _state.module_loaded);
         },
-        
+
         getModulesLoaded: function(){
           return _state.module_loaded;
         },
@@ -388,7 +388,7 @@
                 _state.last_time_changed = (new Date).getTime();
             }
         },
-        
+
         updateData: function( api, key, value ){
             if(_data.hasOwnProperty( api ) && (!_data[ api ].hasOwnProperty( key ) || (_data[ api ][ key ] !== value))){
                 _data[ api ][ key ] = value;
@@ -396,7 +396,7 @@
                 _state.last_time_changed = (new Date).getTime();
             }
         },
-       
+
         disableCaching: function(){
             if(_settings.caching){
                 this.updateSettings( 'caching', false );
@@ -405,7 +405,7 @@
                 cache.clear();
             }
         },
-       
+
         isCachingEnabled: function(){
             return _settings.caching;
         },
@@ -418,7 +418,7 @@
                 }, _settings.interval_caching);
             }
         },
-        
+
         isCryptCachingEnabled: function(){
             return _settings.crypt_caching;
         },
@@ -452,7 +452,7 @@
             if(!this.isModuleLoaded( module )){
                 throw 'This module is not loaded';
             }
-            
+
             if(typeof scope == 'function'){
                 callback = scope;
                 scope = null;
@@ -471,30 +471,30 @@
                 oauth.authorize( _modules[ module ], scope, callback );
             }
         },
-        
+
         logout: function( module, callback ){
             _modules[ module ].login = false;
-            
+
             //logout action if exists
             disconnect( module );
         },
-        
+
         isLogged: function( module ){
             return (_modules[ module ].hasOwnProperty('login') && _modules[ module ].login === true);
         },
-        
+
         on: function(ev, callback){
             var data = ev.split('.'),
-            
+
             module = data[0],
-            
+
             ev = data[1];
-            
+
             if(!ev){
                 module = null;
                 ev = data[0];
             }
-            
+
             if(ev === 'retrieving'){
                 throw 'This event is forbidden';
             }
@@ -502,7 +502,7 @@
             if(typeof callback !== 'function'){
                 throw 'The callback function is invalid';
             }
-            
+
             trigger(module, ev, callback);
         },
 
@@ -536,6 +536,8 @@
             var fn = function(r){
                 _data[module][api] = r.r;
 
+                r.r = JSON.parse(r.r);
+
                 if(p.hasOwnProperty('parser') && _modules[module].parser.hasOwnProperty(p.parser)){
                     r.r = _modules[module].parser[p.parser](r.r);
                 }
@@ -568,6 +570,6 @@
             }); }(module, d.modules[module]));
         }
     }());
-    
+
     window.social = social;
 }( window ));
