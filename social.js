@@ -360,6 +360,10 @@
                 delete temp_client_id[name];
             }
 
+            if(!listeners.hasOwnProperty(name)){
+                return;
+            }
+            
             if(listeners[name].hasOwnProperty('retrieving')){
                 listeners[name]['retrieving']();
             }
