@@ -32,13 +32,13 @@
     in_array = function(s, arr){
         for(var i = 0, m = arr.length; i < m; i += 1){
             if(s === arr[i]){
-                return 1;   
+                return 1;
             }
         }
-        
+
         return 0;
     },
-    
+
     _mergeData2Url  = function( url, data ){
         var params = '?';
         for (var key in data) if(data[key]){
@@ -47,7 +47,7 @@
         }
         url += params;
 
-        return url;       
+        return url;
     },
 
     _xhr = function( method, url, data, headers, callback ){
@@ -60,7 +60,7 @@
         /*if("withCredentials" in xhr && method === "GET"){
             return _jsonp(url + "&callback={{jp}}", callback);
         }*/
-        
+
         if(method === "POST"){
             var f = new FormData();
             for( var x in data ){
@@ -96,21 +96,21 @@
         };
 
         xhr.open(method, url, true);
-        
+
         if(headers){
             for( var x in headers){
                 xhr.setRequestHeader(x, headers[x], false);
             }
         }
-        
-        xhr.send(data);                
+
+        xhr.send(data);
     },
-    
+
     _jsonp = function( url, callback ){
         var cb_name = "__cb_jsonp" + (jsonp_counter++),
         result,
         script = document.createElement("script");
-                
+
         // Add callback to the window object
         window[cb_name] = function(json){
             result = json;
@@ -124,20 +124,20 @@
         script.onreadystatechange = function(){
             if(/loaded|complete/i.test(this.readyState)){
                 callback(result);
-            }    
+            }
         };
         document.head.appendChild( script );
     },
 
     apply_settings = function( sett ){
         sett = sett || {};
-        
+
         var old_settings = _settings;
 
         for(var x in sett){
             if(x in _settings){
                 _settings[ x ] = sett[x];
-            }   
+            }
         }
 
         if(_settings.caching !== old_settings.caching){
@@ -147,7 +147,7 @@
                 social.disableCaching();
             }
         }
-        
+
         _state.last_time_changed = (new Date).getTime();
     },
 
@@ -186,7 +186,7 @@
         decrypt: function( str ){
             return str;
         },
-        
+
         hasCache: function(){
             return localStorage.hasOwnProperty( 'social' );
         },
@@ -200,17 +200,17 @@
 			}
 
 			this.cacheobject.data = data;
-			
+
 			localStorage.social = JSON.stringify( this.cacheobject );
 		},
-		
+
 		get: function(){
 		    if(!this.hasCache()){
 		        return;
 		    }
-		    
+
 		    var d = JSON.parse( localStorage.social );
-		    
+
 		    if(d.crypt === true){
 		        return this.decrypt( d.data );
 		    } else {
@@ -222,10 +222,10 @@
 		    if(listeners.hasOwnProperty('saving')){
 		        listeners.saving();
 		    }
-		    
+
 		    if(_state.last_time_caching < _state.last_time_changed){
 		        var config_module = {};
-		        
+
 		        for(var x in _modules){
 		            config_module[x] = {};
 		              config_module[x].name = _modules[x].name;
@@ -234,24 +234,24 @@
 		              config_module[x].refresh_token = _modules[x].refresh_token;
 		              config_module[x].expireIn = _modules[x].expireIn;
 		        }
-		        
+
 		        var d = {
 		            'settings': _settings,
 					'data': _data,
 					'modules': config_module
 		        };
-		        
+
 		        this.store( d );
 
 		        _state.last_time_caching = (new Date).getTime();
 		     }
-		     
+
 	       if(listeners.hasOwnProperty('saved')){
                 listeners.saved();
             }
 		}
 	},
-    
+
     oauth = {
         authorize: function(module, scope, callback){
             var url = module.authorizationCodeURL(scope, _settings.default_redirect_uri),
