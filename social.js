@@ -41,7 +41,7 @@
 
     _mergeData2Url  = function( url, data ){
         var params = '?';
-        for (var key in data) if(data[key]){
+        for (var key in data) if(data.hasOwnProperty(key)){
             params += encodeURIComponent(key) + '=' +
             encodeURIComponent(data[key]) + '&';
         }
