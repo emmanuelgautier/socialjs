@@ -279,7 +279,19 @@
 
                     popup.close();
                     clearInterval(timer); 
-                    
+
+                    //if is an desktop app, some api give you token without code
+                    if(authorizationCode.access_token){
+                        module.access_token     = authorizationCode.access_token;
+                        module.refresh_token    = authorizationCode.resfresh_token;
+                        module.expiresIn        = authorizationCode.expiresIn;
+                        module.login            = true;
+
+                        callback({state: 1, error: null});
+
+                        return;
+                    }
+
                     if(authorizationCode.indexOf('Error') != -1){
                         callback({state:0, error: authorizationCode});
                     } else {
