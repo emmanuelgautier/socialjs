@@ -474,6 +474,10 @@
                 scope = null;
             }
 
+            if(!callback || typeof callback != 'function'){
+                callback = function(e){};
+            }
+
             if(this.isLogged( module )){
                 callback({state: 1, error: null});
                 return;
