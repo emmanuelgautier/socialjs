@@ -1,31 +1,31 @@
 (function( window ){
     "use strict";
 
-	var _modules = {},
+    var _modules = {},
 
-	_state = {
-	  module_loaded: [],
-	  last_time_caching: 0,
-	  last_time_changed: 0
+    _state = {
+        module_loaded: [],
+        last_time_caching: 0,
+        last_time_changed: 0
     },
 
-	_settings = {
-		caching: false,
-		interval_caching: 1000,
-		timer_caching: null,
-		crypt_caching: false,
-		crypt_password: null,
-		default_redirect_uri: null
-	},
+    _settings = {
+        caching: false,
+        interval_caching: 1000,
+        timer_caching: null,
+        crypt_caching: false,
+        crypt_password: null,
+        default_redirect_uri: null
+    },
 
-	_data = {},
+    _data = {},
 
     //events ['retrieving', 'loaded', 'update', 'saving']
     listeners = {},
 
     jsonp_counter = 0,
 
-	temp_client_id = [],
+    temp_client_id = [],
 
 	auth_url = null,
 
@@ -156,16 +156,16 @@
         script.type = 'text/javascript';
         script.src = 'socialjs/modules/' + moduleName + '.js';
         document.head.appendChild( script );
-        
+
         _state.module_loaded.push(moduleName);
     },
 
     trigger = function(module, ev, callback){
         if(module) {
             listeners[module] = listeners[module] || {};
-            listeners[module][ev] = callback;            
+            listeners[module][ev] = callback;
         } else {
-            listeners[ev] = callback;   
+            listeners[ev] = callback;
         }
     },
 
@@ -179,19 +179,19 @@
         }
     },
 
-	cache = {
-		cacheobject: {
-			crypt: false,
-			data: null
-		},
-			
-		clear: function(){
-			delete localStorage.social;
-		},
-		
-		crypt: function( str ){
-			return str;
-		},
+    cache = {
+        cacheobject: {
+            crypt: false,
+            data: null
+        },
+
+        clear: function(){
+            delete localStorage.social;
+        },
+
+        crypt: function( str ){
+            return str;
+        },
 
         decrypt: function( str ){
             return str;
@@ -201,66 +201,66 @@
             return localStorage.hasOwnProperty( 'social' );
         },
 
-		store: function( data ){
-			if(_settings.crypt_caching){
-			    data = cache.crypt( data );
-			    this.cacheobject.crypt = true;
-			} else {
-			    this.cacheobject.crypt = false;
-			}
+        store: function( data ){
+            if(_settings.crypt_caching){
+                data = cache.crypt( data );
+                this.cacheobject.crypt = true;
+            } else {
+                this.cacheobject.crypt = false;
+            }
 
-			this.cacheobject.data = data;
+            this.cacheobject.data = data;
 
-			localStorage.social = JSON.stringify( this.cacheobject );
-		},
+            localStorage.social = JSON.stringify( this.cacheobject );
+        },
 
-		get: function(){
-		    if(!this.hasCache()){
-		        return;
-		    }
+        get: function(){
+            if(!this.hasCache()){
+                return;
+            }
 
-		    var d = JSON.parse( localStorage.social );
+            var d = JSON.parse( localStorage.social );
 
-		    if(d.crypt === true){
-		        return this.decrypt( d.data );
-		    } else {
-		        return d.data;
-		    }
-		},
+            if(d.crypt === true){
+                return this.decrypt( d.data );
+            } else {
+                return d.data;
+            }
+        },
 
-		update: function(){
-		    if(listeners.hasOwnProperty('saving')){
-		        listeners.saving();
-		    }
+        update: function(){
+            if(listeners.hasOwnProperty('saving')){
+                listeners.saving();
+            }
 
-		    if(_state.last_time_caching < _state.last_time_changed){
-		        var config_module = {};
+            if(_state.last_time_caching < _state.last_time_changed){
+                var config_module = {};
 
-		        for(var x in _modules){
-		            config_module[x] = {};
-		              config_module[x].name = _modules[x].name;
-		              config_module[x].client_id = _modules[x].client_id;
-		              config_module[x].access_token = _modules[x].access_token;
-		              config_module[x].refresh_token = _modules[x].refresh_token;
-		              config_module[x].expireIn = _modules[x].expireIn;
-		        }
+                for(var x in _modules){
+                    config_module[x] = {};
+                    config_module[x].name = _modules[x].name;
+                    config_module[x].client_id = _modules[x].client_id;
+                    config_module[x].access_token = _modules[x].access_token;
+                    config_module[x].refresh_token = _modules[x].refresh_token;
+                    config_module[x].expireIn = _modules[x].expireIn;
+                }
 
-		        var d = {
-		            'settings': _settings,
-					'data': _data,
-					'modules': config_module
-		        };
+                var d = {
+                    'settings': _settings,
+                    'data': _data,
+                    'modules': config_module
+                };
 
-		        this.store( d );
+                this.store( d );
 
-		        _state.last_time_caching = (new Date).getTime();
-		     }
+                _state.last_time_caching = (new Date).getTime();
+            }
 
-	       if(listeners.hasOwnProperty('saved')){
+            if(listeners.hasOwnProperty('saved')){
                 listeners.saved();
             }
-		}
-	},
+        }
+    },
 
     oauth = {
         authorize: function(module, scope, callback){
@@ -341,13 +341,13 @@
     social = {
         init: function(module, settings){
             module = module || {};
-            
+
             for(var x in module){
                 this.addModule(x, module[x]);
             }
-            
+
             if(settings){
-                apply_settings( settings );   
+                apply_settings( settings );
             }
         },
 
@@ -361,7 +361,7 @@
 
             var implementing = [
                 'accessToken', 'accessTokenDate', 'apiScope', 'clientId', 'clientSecret',
-                'expiresIn', 'refreshToken', 'redirect_uri', 'accessTokenURL', 'accessTokenMethod', 
+                'expiresIn', 'refreshToken', 'redirect_uri', 'accessTokenURL', 'accessTokenMethod',
                 'parseAuthorizationCode', 'accessTokenParams', 'parseAccessToken', 'api'
             ];
 
@@ -373,7 +373,7 @@
 
             _modules[ name ] = module;
             _data[ name ] = _data[ name ] | {};
-            
+
             if(clientID){
                 _modules[ name ].client_id = clientID;
             } else if(temp_client_id[name]) {
@@ -413,7 +413,7 @@
         updateSettings: function( key, value ){
             if(_settings.hasOwnProperty( key ) && _settings[key] !== value){
                 _settings[ key ] = value;
-                
+
                 _state.last_time_changed = (new Date).getTime();
             }
         },
@@ -421,7 +421,7 @@
         updateData: function( api, key, value ){
             if(_data.hasOwnProperty( api ) && (!_data[ api ].hasOwnProperty( key ) || (_data[ api ][ key ] !== value))){
                 _data[ api ][ key ] = value;
-                
+
                 _state.last_time_changed = (new Date).getTime();
             }
         },
@@ -430,7 +430,7 @@
             if(_settings.caching){
                 this.updateSettings( 'caching', false );
                 clearInterval( _settings.timer_caching );
-                
+
                 cache.clear();
             }
         },
@@ -462,14 +462,14 @@
         disableCryptCaching: function(){
             this.updateSettings( 'crypt_caching', false );
             this.updateSettings( 'crypt_password', null );
-            
+
             cache.update();
         },
 
         //popup authentication api
-		setAuthUrl: function( url ){
-			auth_url = url;
-		},
+        setAuthUrl: function( url ){
+            auth_url = url;
+        },
 
         disconnect: function( module ){
             if(_modules.hasOwnProperty( module )){
@@ -495,7 +495,7 @@
                 callback({state: 1, error: null});
                 return;
             }
-            
+
             _modules[ module ].login = false;
 
             if(_modules[ module ].accessToken !== null && _modules[ module ].refresh_token !== null){
@@ -539,7 +539,7 @@
             trigger(module, ev, callback);
         },
 
-        api: function(api, data, _callback){         
+        api: function(api, data, _callback){
             var api_split = api.split('.'),
 
             module = api_split[0],
@@ -574,11 +574,11 @@
                 if(p.hasOwnProperty('parser') && _modules[module].parser.hasOwnProperty(p.parser)){
                     r.r = _modules[module].parser[p.parser](r.r);
                 }
-                
+
                 _callback(r);
             };
 
-            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, fn );  
+            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, fn );
         }
     };
 
