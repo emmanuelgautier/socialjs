@@ -169,6 +169,16 @@
         }
     },
 
+    codingImprovement = function( name ){
+        window.social[ name ] = {};
+
+            window.social[name].login = function( fn ){ window.social.login( name, fn); };
+
+        for(var api in _modules[ name ].api){
+            window.social[ name ][ api ] = (function(name, api){ return function(data, fn) { window.social.api( name + '.' + api, data, fn ); }; })(name, api);
+        }
+    },
+
 	cache = {
 		cacheobject: {
 			crypt: false,
@@ -372,10 +382,13 @@
                 delete temp_client_id[name];
             }
 
+            //improve script interface
+            codingImprovement( name );
+
             if(!listeners.hasOwnProperty(name)){
                 return;
             }
-            
+
             if(listeners[name].hasOwnProperty('retrieving')){
                 listeners[name]['retrieving']();
             }
