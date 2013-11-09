@@ -172,9 +172,17 @@
     codingImprovement = function( name ){
         window.social[ name ] = {};
 
-            window.social[name].login = function( fn ){ window.social.login( name, fn); };
+            window.social[name].login       = function( fn ){ window.social.login( name, fn); };
+            window.social[name].isLogged    = function(){ return window.social.isLogged( name ); };
+            window.social[name].set         = function( key, data ){ window.social.cache.set( name, key, data); };
+            window.social[name].get         = function( key ){ return window.social.cache.get( name, key ); };
 
         for(var api in _modules[ name ].api){
+            //protect some function
+            if(api === 'login' || api === 'set' || api === 'get'){
+                continue;
+            }
+
             window.social[ name ][ api ] = (function(name, api){ return function(data, fn) { window.social.api( name + '.' + api, data, fn ); }; })(name, api);
         }
     },
@@ -372,7 +380,7 @@
             });
 
             _modules[ name ] = module;
-            _data[ name ] = _data[ name ] | {};
+            _data[ name ] = _data[ name ] || {};
 
             if(clientID){
                 _modules[ name ].client_id = clientID;
@@ -516,6 +524,26 @@
             return (_modules[ module ].hasOwnProperty('login') && _modules[ module ].login === true);
         },
 
+        cache: {
+            set: function(api, key, data){
+                if(!_data.hasOwnProperty(api)){
+                    return;
+                }
+    
+                _data[api][key] = data;
+            },
+    
+            get: function(api, key){
+                if(!_data.hasOwnProperty(api) || !_data[api].hasOwnProperty(key)){
+                    return;
+                }
+    
+                console.log(_data[api][key]);
+    
+                return _data[api][key];
+            }
+        },
+
         on: function(ev, callback){
             var data = ev.split('.'),
 
@@ -539,7 +567,7 @@
             trigger(module, ev, callback);
         },
 
-        api: function(api, data, _callback){
+        api: function(api, data, callback){
             var api_split = api.split('.'),
 
             module = api_split[0],
@@ -548,17 +576,21 @@
 
             p;
 
+            if(typeof data === 'function'){
+                callback = data;
+                data = null;
+            }
+
+            if(!callback || typeof callback != 'function'){
+                callback = function(e){};
+            }
+
             if(!_modules[module].api.hasOwnProperty(api) && typeof _modules[module].api[api] != 'function'){
                 throw 'This api does not exist for this module';
             }
 
             if(_modules[module].access_token === null){
                 throw 'You must be log in';
-            }
-
-            if(typeof data == 'function'){
-                _callback = data;
-                data = null;
             }
 
             data = data || {};
@@ -575,7 +607,7 @@
                     r.r = _modules[module].parser[p.parser](r.r);
                 }
 
-                _callback(r);
+                callback(r);
             };
 
             _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, fn );
