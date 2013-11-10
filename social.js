@@ -39,7 +39,7 @@
         return 0;
     },
 
-    _mergeData2Url  = function( url, data ){
+    _mergeData2Url = function( url, data ){
         var params = '?';
         for (var key in data) if(data.hasOwnProperty(key)){
             params += encodeURIComponent(key) + '=' +
@@ -48,6 +48,31 @@
         url += params;
 
         return url;
+    },
+
+    _window_open = function(url, callback){
+            var popup = window.open(
+                url,
+                'Authentication',
+                "resizeable=true,height=550,width=500,left="+ ((window.innerWidth - 500) / 2) + ",top=" + ((window.innerHeight - 550) / 2)
+            );
+
+            popup.focus();
+
+            var timer = setInterval(function(){
+                if(popup.closed){
+                    clearInterval(timer);
+                    callback({state:0, error: "The authentication window has been closed"});
+                }
+
+                if(auth_url){
+                    popup.close();
+                    clearInterval(timer); 
+
+                    callback({state: 1, r: auth_url});
+                    auth_url = null;
+                }
+            }, 100);
     },
 
     _xhr = function( method, url, data, headers, callback ){
@@ -247,10 +272,10 @@
                 for(var x in _modules){
                     config_module[x] = {};
                     config_module[x].name = _modules[x].name;
-                    config_module[x].client_id = _modules[x].client_id;
-                    config_module[x].access_token = _modules[x].access_token;
-                    config_module[x].refresh_token = _modules[x].refresh_token;
-                    config_module[x].expireIn = _modules[x].expireIn;
+                    config_module[x].client_id = _modules[x].oauth.client_id;
+                    config_module[x].access_token = _modules[x].oauth.access_token;
+                    config_module[x].refresh_token = _modules[x].oauth.refresh_token;
+                    config_module[x].expires_in = _modules[x].oauth.expires_in;
                 }
 
                 var d = {
@@ -270,54 +295,100 @@
         }
     },
 
-    oauth = {
-        authorize: function(module, scope, callback){
-            var url = module.authorizationCodeURL(scope, _settings.default_redirect_uri),
+    _oauth = {
+        oauth1a: {
+            authenticate: function( oauth, callback ){
+                
+            },
 
-            authorizationCode,
+            request_token: function(url, consumer_key, signature_method, signature, timestamp, nonce, oauth_callback, callback, version){
+                version = version || "";
+                
+                _xhr("POST", url, {
+                    
+                }, {
+                    
+                }, callback);
+            },
 
-            popup = window.open(
-                url,
-                'Authentication',
-                "resizeable=true,height=550,width=500,left="+ ((window.innerWidth - 500) / 2) + ",top=" + ((window.innerHeight - 550) / 2)
-            );
+            access_token: function( consumer_key, token, signature_method, signature, timestamp, nonce, verifier, callback, version){
+                
+            }
+        },
 
-            popup.focus();
+        oauth2: {
+            authenticate: function( module, callback ){
+                var that = this;
+                if( _modules[ module ].oauth.access_token !== null && _modules[ module ].oauth.refresh_token !== null){
+                    this.refresh_token( _modules[ module ], function( response ){
+                        if(response.state === 0){
+                            callback({state: 0, error: response.error});
+                        }
 
-            var that = this,
-            timer = setInterval(function(){
-                if(popup.closed){
-                    clearInterval(timer);
-                    callback({state:0, error: "The authentication window has been closed"});
+                        var response_data = JSON.parse( response.r );
+
+                        _modules[ module ].oauth.access_token   = response_data.access_token;
+                        _modules[ module ].oauth.token_type     = response_data.token_type;
+                        _modules[ module ].oauth.expires_in     = response_data.expires_in;
+                        _modules[ module ].oauth.refresh_token  = response_data.refresh_token;
+                    } );
+                } else {
+                    this.authorize( _modules[ module ].oauth.authorize_uri, _modules[ module ].oauth.response_type, _modules[ module ].oauth.client_id, _modules[ module ].oauth.redirect_uri, _modules[ module ].oauth.scope, _modules[ module ].oauth.authorize_options, function(response){
+                        if(response.state === 0){
+                            callback({state: 0, error: response.error});
+                            return;
+                        }
+
+                        var authorization_code = decodeURIComponent( response.r ).match( _modules[ module ].oauth.reg_authorization_code );
+
+                        //if is an desktop app, some api give you token without code
+                        if(authorization_code[0].indexOf('access_token=') != -1){
+                            _modules[ module ].oauth.access_token   = authorization_code[1];
+                            _modules[ module ].oauth.expires_in     = authorization_code[2];
+                            _modules[ module ].login                = true;
+
+                            callback({state: 1, error: null});
+
+                            return;
+                        }
+
+                        if(authorization_code.indexOf('Error') != -1){
+                            callback({state:0, error: authorization_code});
+                        } else {
+                            that.access_token( _modules[ module ].oauth.access_token_uri, authorization_code[1], _modules[ module ].oauth.redirect_uri, callback);
+                        }
+                    } );
+                }
+            },
+
+            authorize: function( uri, response_type, client_id, redirect_uri, scope, options, callback){
+                var url = "https://" + uri + "?" + 
+                "response_type=" + response_type + "&" +
+                "client_id=" + client_id + "&" + 
+                "redirect_uri=" + redirect_uri + "&" +
+                "scope=" + scope;
+                
+                for(var option in options){
+                    url += "&" + option + "=" + options[ option ];
                 }
 
-                if(auth_url){
-                    authorizationCode = module.parseAuthorizationCode(auth_url);
-                    auth_url = null;
+                _window_open( url, callback );
+            },
 
-                    popup.close();
-                    clearInterval(timer); 
+            access_token: function( uri, grant_type, code, redirect_uri, client_id, callback ){
+                var url = "https://" + uri;
 
-                    //if is an desktop app, some api give you token without code
-                    if(authorizationCode.access_token){
-                        module.access_token     = authorizationCode.access_token;
-                        module.refresh_token    = authorizationCode.resfresh_token;
-                        module.expiresIn        = authorizationCode.expiresIn;
-                        module.login            = true;
+                _xhr( "GET", url, {
+                    grant_type: grant_type,
+                    code: code,
+                    redirect_uri: redirect_uri,
+                    client_id: client_id
+                }, null, callback );
+            },
 
-                        callback({state: 1, error: null});
-
-                        return;
-                    }
-
-                    if(authorizationCode.indexOf('Error') != -1){
-                        callback({state:0, error: authorizationCode});
-                    } else {
-                        module.access_token = authorizationCode;
-                        that.getAccessAndRefreshToken(module, authorizationCode, callback);
-                    }
-                }
-            }, 100);
+            refresh_token: function(){
+                
+            }
         },
 
         getAccessAndRefreshToken: function(module, authorizationCode, callback) {
@@ -383,9 +454,9 @@
             _data[ name ] = _data[ name ] || {};
 
             if(clientID){
-                _modules[ name ].client_id = clientID;
+                _modules[ name ].oauth.client_id = clientID;
             } else if(temp_client_id[name]) {
-                _modules[ name ].client_id = temp_client_id[name];
+                _modules[ name ].oauth.client_id = temp_client_id[name];
 
                 delete temp_client_id[name];
             }
@@ -506,10 +577,14 @@
 
             _modules[ module ].login = false;
 
-            if(_modules[ module ].accessToken !== null && _modules[ module ].refresh_token !== null){
-                oauth.refreshToken( _modules[ module ], callback );
-            } else {
-                oauth.authorize( _modules[ module ], scope, callback );
+            switch(_modules[ module ].oauth.version){
+                case '2.0':
+                    _oauth.oauth2.authenticate( module, callback);
+                    break;
+
+                case '1.0a':
+                    _oauth.oauth1a.authenticate( module, callback);
+                    break;
             }
         },
 
@@ -529,17 +604,15 @@
                 if(!_data.hasOwnProperty(api)){
                     return;
                 }
-    
+
                 _data[api][key] = data;
             },
-    
+
             get: function(api, key){
                 if(!_data.hasOwnProperty(api) || !_data[api].hasOwnProperty(key)){
                     return;
                 }
-    
-                console.log(_data[api][key]);
-    
+
                 return _data[api][key];
             }
         },
@@ -589,15 +662,15 @@
                 throw 'This api does not exist for this module';
             }
 
-            if(_modules[module].access_token === null){
+            if(!this.isLogged( module )){
                 throw 'You must be log in';
             }
 
             data = data || {};
 
             p = _modules[module].api[api](data);
-            p.url = _mergeData2Url(p.url, p.data_merge).replace('{{a}}', _modules[ module ].access_token);
-            
+            p.url = _mergeData2Url(p.url, p.data_merge).replace('{{a}}', _modules[ module ].oauth.access_token);
+
             var fn = function(r){
                 _data[module][api] = r.r;
 
@@ -610,7 +683,7 @@
                 callback(r);
             };
 
-            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].access_token}, fn );
+            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].oauth.access_token}, fn );
         }
     };
 
@@ -629,9 +702,9 @@
         for(var module in d.modules){
             (function(name, data){
                 trigger( name, 'retrieving', function(){
-                    _modules[ name ].access_token = data.access_token;
-                    _modules[ name ].refresh_token = data.refresh_token;
-                    _modules[ name ].expiresIn = data.expiresIn;
+                    _modules[ name ].oauth.access_token = data.access_token;
+                    _modules[ name ].oauth.refresh_token = data.refresh_token;
+                    _modules[ name ].oauth.expires_in = data.expires_in;
             }); }(module, d.modules[module]));
         }
     }());
