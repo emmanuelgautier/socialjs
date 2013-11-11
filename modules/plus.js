@@ -1,5 +1,12 @@
 social.addModule("plus", null, {
     name: "plus",
+    oauth: {
+        version: '2.0',
+        redirect_uri: '',
+        authorize_uri: '',
+        acces_token_uri: '',
+        client_id: null
+    },
     client_id: null,
     access_token: null,
     refresh_token: null,
@@ -124,15 +131,30 @@ social.addModule("plus", null, {
 
         activity: function(json){
             var activity = {};
+
+            activity.title      = json.title;
+            activity.published  = json.published;
+            activity.id         = json.id;
+            activity.url        = json.url;
+            activity.actor      = json.actor;
+            activity.verb       = json.verb;
+            activity.replies    = json.replies;
+            activity.plusoners  = json.plusoners;
+            activity.resharers  = json.resharers;
+            activity.attachments= json.attachments;
+            
+            return activity;
         },
 
         activities: function(json){
             var activities = [];
 
-            for(var i = 0, j = json.length; i < j; i += 1){
-                activities[i] = this.activity(json[i]);
+                activities.updated = json.updated;
+
+            for(var i = 0, j = json.items.length; i < j; i += 1){
+                activities.activity[i] = this.activity(json.items[i]);
             }
-            
+
             return activities;
         }
     },
