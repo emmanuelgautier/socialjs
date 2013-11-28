@@ -297,22 +297,62 @@
 
     _oauth = {
         oauth1a: {
-            authenticate: function( oauth, callback ){
-                
+            generate_nonce: function(){
+                var nonce = '';
+                for(var i = 0; i < 4; i += 1){
+                    nonce += Math.random().toString(36).substring(8);
+                }
+
+                return btoa(nonce);
             },
 
-            request_token: function(url, consumer_key, signature_method, signature, timestamp, nonce, oauth_callback, callback, version){
+            authenticate: function( module, callback ){
+                /*_window_open( "https://" + _modules[ module ].oauth.authenticate_uri, function(data){
+                    console.log(data);
+                } );*/
+
+                this.request_token( _modules[ module ].oauth.request_token_uri, _modules[ module ].oauth.consumer_key, _modules[ module ].oauth.consumer_secret, _modules[ module ].oauth.signature_method, _modules[ module ].oauth.callback_url, function(data){
+                    console.log(data);
+                }, '' );
+            },
+
+            request_token: function( uri, consumer_key, consumer_secret, signature_method, oauth_callback, callback, version ){
                 version = version || "";
-                
-                _xhr("POST", url, {
-                    
-                }, {
-                    
-                }, callback);
+
+                oauth_callback = encodeURIComponent( oauth_callback );
+                consumer_key = encodeURIComponent( consumer_key );
+                nonce = encodeURIComponent( nonce );
+                signature_method = encodeURIComponent( signature_method );
+
+                var url = 'HTTPS://' + uri,
+
+                timestamp = Math.round(new Date().getTime() / 1000),
+                nonce = this.generate_nonce(),
+
+                parameter_string = 'oauth_callback=' + oauth_callback + '&'
+                + 'oauth_consumer_key=' + consumer_key + '&'
+                + 'oauth_nonce=' + nonce + '&'
+                + 'oauth_signature_method=' + signature_method + '&'
+                + 'oauth_timestamp=' + timestamp,
+                signature_base_string = 'POST&' + encodeURIComponent( url ) + '&' + parameter_string,
+                signin_key = encodeURIComponent( consumer_secret ),
+                signature = CryptoJS.HmacSHA1(signature_base_string, signin_key);
+
+                var header_oauth = 'OAuth oauth_nonce=' + nonce + ','
+                + 'oauth_callback=' + oauth_callback + ','
+                + 'oauth_signature_method=' + signature_method + ',' +
+                + 'oauth_timestamp=' + timestamp + ','
+                + 'oauth_consumer_key=' + consumer_key + ','
+                + 'oauth_signature=' + signature + ', oauth_version=1.0';
+                var header = {
+                    Authorization: header_oauth
+                };
+
+                _xhr("POST", url, null, header, callback);
             },
 
-            access_token: function( consumer_key, token, signature_method, signature, timestamp, nonce, verifier, callback, version){
-                
+            access_token: function( consumer_key, token, signature_method, signature, timestamp, nonce, verifier, callback, version ){
+                //access_token function
             }
         },
 
@@ -342,7 +382,7 @@
                         var authorization_code = decodeURIComponent( response.r ).match( _modules[ module ].oauth.reg_authorization_code );
 
                         //if is an desktop app, some api give you token without code
-                        if(authorization_code[0].indexOf('access_token=') != -1){
+                        if(authorization_code[0] && authorization_code[0].indexOf('access_token=') != -1){
                             _modules[ module ].oauth.access_token   = authorization_code[1];
                             _modules[ module ].oauth.expires_in     = authorization_code[2];
                             _modules[ module ].login                = true;
@@ -362,12 +402,12 @@
             },
 
             authorize: function( uri, response_type, client_id, redirect_uri, scope, options, callback){
-                var url = "https://" + uri + "?" + 
+                var url = "https://" + uri + "?" +
                 "response_type=" + response_type + "&" +
-                "client_id=" + client_id + "&" + 
+                "client_id=" + client_id + "&" +
                 "redirect_uri=" + redirect_uri + "&" +
                 "scope=" + scope;
-                
+
                 for(var option in options){
                     url += "&" + option + "=" + options[ option ];
                 }
