@@ -45,7 +45,6 @@
             params += encodeURIComponent(key) + '=' +
             encodeURIComponent(data[key]) + '&';
         }
-        url += params;
 
         return url;
     },
@@ -199,16 +198,16 @@
 
             window.social[name].login       = function( fn ){ window.social.login( name, fn); };
             window.social[name].isLogged    = function(){ return window.social.isLogged( name ); };
-            window.social[name].set         = function( key, data ){ window.social.cache.set( name, key, data); };
-            window.social[name].get         = function( key ){ return window.social.cache.get( name, key ); };
+            /*window.social[name].set         = function( key, data ){ window.social.cache.set( name, key, data); };
+            window.social[name].get         = function( key ){ return window.social.cache.get( name, key ); };*/
 
         for(var api in _modules[ name ].api){
-            //protect some function
-            if(api === 'login' || api === 'set' || api === 'get'){
+            //protect some functions
+            if(api === 'login' || api === 'isLogged' || api === 'set' || api === 'get'){
                 continue;
             }
 
-            window.social[ name ][ api ] = (function(name, api){ return function(data, fn) { window.social.api( name + '.' + api, data, fn ); }; })(name, api);
+            window.social[ name ][ api ] = (function(name, api){ return function() { window.social.api.apply(this, [ name + '.' + api ].concat(arguments) ); }; })(name, api);
         }
     },
 
@@ -382,7 +381,7 @@
                         var authorization_code = decodeURIComponent( response.r ).match( _modules[ module ].oauth.reg_authorization_code );
 
                         //if is an desktop app, some api give you token without code
-                        if(authorization_code[0] && authorization_code[0].indexOf('access_token=') != -1){
+                        if(authorization_code && authorization_code[0] && authorization_code[0].indexOf('access_token=') != -1){
                             _modules[ module ].oauth.access_token   = authorization_code[1];
                             _modules[ module ].oauth.expires_in     = authorization_code[2];
                             _modules[ module ].login                = true;
@@ -680,21 +679,19 @@
             trigger(module, ev, callback);
         },
 
-        api: function(api, data, callback){
-            var api_split = api.split('.'),
+        //the first argument is api and the last is callback
+        api: function(){
+            var api_split = arguments[0].split('.'),
 
             module = api_split[0],
 
             api = api_split[1],
 
-            p;
+            callback, p;
 
-            if(typeof data === 'function'){
-                callback = data;
-                data = null;
-            }
-
-            if(!callback || typeof callback != 'function'){
+            if(typeof arguments[ arguments.length - 1] === 'function'){
+                callback = arguments[ arguments.length - 1];
+            } else {
                 callback = function(e){};
             }
 
@@ -706,9 +703,11 @@
                 throw 'You must be log in';
             }
 
-            data = data || {};
+            var args = Array.prototype.slice.call(arguments);
+                args.shift();
+                args.pop();
 
-            p = _modules[module].api[api](data);
+            p = _modules[module].api[api].apply(_modules[module].api, args);
             p.url = _mergeData2Url(p.url, p.data_merge).replace('{{a}}', _modules[ module ].oauth.access_token);
 
             var fn = function(r){
@@ -722,7 +721,7 @@
 
                 callback(r);
             };
-
+            
             _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].oauth.access_token}, fn );
         }
     };
