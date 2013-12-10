@@ -40,9 +40,13 @@
     },
 
     _mergeData2Url = function( url, data ){
-        var params = '?';
+        if(!data){
+            return url;
+        }
+        
+        url += '?';
         for (var key in data) if(data.hasOwnProperty(key) && data[key] !== null){
-            params += encodeURIComponent(key) + '=' +
+            url += encodeURIComponent(key) + '=' +
             encodeURIComponent(data[key]) + '&';
         }
 
@@ -708,7 +712,9 @@
                 args.pop();
 
             p = _modules[module].api[api].apply(_modules[module].api, args);
-            p.url = _mergeData2Url(p.url, p.data_merge).replace('{{a}}', _modules[ module ].oauth.access_token);
+            p.url = _mergeData2Url(p.url, p.data_merge)
+                .replace('{{a}}', _modules[ module ].oauth.access_token)
+                .replace(encodeURI('{{a}}'), _modules[ module ].oauth.access_token);
 
             var fn = function(r){
                 _data[module][api] = r.r;
