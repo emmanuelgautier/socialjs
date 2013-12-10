@@ -211,7 +211,7 @@
                 continue;
             }
 
-            window.social[ name ][ api ] = (function(name, api){ return function() { window.social.api.apply(this, [ name + '.' + api ].concat(arguments) ); }; })(name, api);
+            window.social[ name ][ api ] = (function(name, api){ return function() { window.social.api.apply(this, [ name + '.' + api ].concat(Array.prototype.slice.call(arguments)) ); }; })(name, api);
         }
     },
 
@@ -693,10 +693,8 @@
 
             callback, p;
 
-            if(typeof arguments[ arguments.length - 1] === 'function'){
-                callback = arguments[ arguments.length - 1];
-            } else {
-                callback = function(e){};
+            if(typeof arguments[ arguments.length - 1] != 'function'){
+                arguments[ arguments.length] = function(e){};
             }
 
             if(!_modules[module].api.hasOwnProperty(api) && typeof _modules[module].api[api] != 'function'){
@@ -710,6 +708,8 @@
             var args = Array.prototype.slice.call(arguments);
                 args.shift();
                 args.pop();
+
+            callback = arguments[ arguments.length - 1];
 
             p = _modules[module].api[api].apply(_modules[module].api, args);
             p.url = _mergeData2Url(p.url, p.data_merge)
@@ -727,7 +727,7 @@
 
                 callback(r);
             };
-            
+
             _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].oauth.access_token}, fn );
         }
     };
