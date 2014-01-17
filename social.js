@@ -695,6 +695,7 @@
 
             if(typeof arguments[ arguments.length - 1] != 'function'){
                 arguments[ arguments.length] = function(e){};
+                arguments.length += 1;
             }
 
             if(!_modules[module].api.hasOwnProperty(api) && typeof _modules[module].api[api] != 'function'){
