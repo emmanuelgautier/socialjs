@@ -2,25 +2,22 @@ social.addModule("plus", null, {
     name: "plus",
     oauth: {
         version: '2.0',
-        redirect_uri: '',
-        authorize_uri: '',
-        acces_token_uri: '',
-        client_id: null
+        redirect_uri: 'https://www.google.com/robots.txt',
+        authorize_uri: 'accounts.google.com/o/oauth2/auth',
+        access_token_uri: 'accounts.google.com/o/oauth2/token',
+        client_id: null,
+        response_type: 'token',
+        access_token: null,
+        refresh_token: null,
+        expire_in: null,
+        client_secret: 'IXcN4fSduNCT8c_ft1-fHujk',
+        scope_delimiter: ' ',
+        scope_default: 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me',
+        scope: 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me',
+        authorize_options: {},
+        access_token_options: {},
+        reg_authorization_code: /access_token=([^&]+)(?:&expires_in=(.*))?/
     },
-    client_id: null,
-    access_token: null,
-    refresh_token: null,
-    expireIn: null,
-    client_secret: 'IXcN4fSduNCT8c_ft1-fHujk',
-    redirect_uri: 'https://www.google.com/robots.txt',
-    accessTokenURL: 'https://accounts.google.com/o/oauth2/token',
-    accessTokenMethod: 'POST',
-    refreshTokenUrl: 'https://accounts.google.com/o/oauth2/token',
-    refreshTokenMethod: 'POST',
-    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-    base_uri: '',
-    default_scope: 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me',
-    current_scope: null,
 
     scope: {
         
@@ -151,8 +148,9 @@ social.addModule("plus", null, {
 
                 activities.updated = json.updated;
 
+            activities.activities = [];
             for(var i = 0, j = json.items.length; i < j; i += 1){
-                activities.activity[i] = this.activity(json.items[i]);
+                activities.activities[i] = this.activity(json.items[i]);
             }
 
             return activities;
@@ -164,7 +162,7 @@ social.addModule("plus", null, {
         getPeople: function( userId ){
             return {
                 method: "GET",
-                url: "https://www.googleapis.com/plus/v1/people/" + userId + "?access_token={{a}}",
+                url: "https://www.googleapis.com/plus/v1/people/" + userId,
                 data_merge: null,
                 scope: true,
                 parser: 'person'
@@ -180,8 +178,7 @@ social.addModule("plus", null, {
                     query: query,
                     lang: lang || null,
                     maxResults: maxResults || null,
-                    pageToken: pageToken || null,
-                    access_token: '{{a}}'
+                    pageToken: pageToken || null
                 },
                 scope: true,
                 parser: person
@@ -195,8 +192,7 @@ social.addModule("plus", null, {
                 url: "https://www.googleapis.com/plus/v1/activities/" + activityId + "/people/" + collection,
                 data_merge: {
                     maxResults: maxResults || null,
-                    pageToken: pageToken || null,
-                    access_token: '{{a}}'
+                    pageToken: pageToken || null
                 },
                 scope: true
             };
@@ -210,10 +206,9 @@ social.addModule("plus", null, {
                data_merge: {
                    maxResults: maxResults || null,
                    orderBy: orderBy || null,
-                   pageToken: pageToken || null,
-                   access_token: '{{a}}'
+                   pageToken: pageToken || null
                },
-               scope: current_scope === "https://www.googleapis.com/auth/plus.login"
+               scope: true
             };
         },
 
@@ -224,8 +219,7 @@ social.addModule("plus", null, {
               url: "https://www.googleapis.com/plus/v1/people/" + userId + "/activities/" + collection,
               data_merge: {
                   maxResults: maxResults || null,
-                  pageToken: pageToken || null,
-                  access_token: '{{a}}'
+                  pageToken: pageToken || null
               },
               scope: true,
               parser: 'activities'
@@ -236,7 +230,7 @@ social.addModule("plus", null, {
         getActivity: function( activityId ){
             return{
                 method: "GET",
-                url: "https://www.googleapis.com/plus/v1/activities/" + activityId + "?access_token={{a}}",
+                url: "https://www.googleapis.com/plus/v1/activities/" + activityId,
                 data_merge: null,
                 scope: true,
                 parser: 'activity'
@@ -253,8 +247,7 @@ social.addModule("plus", null, {
                     lang: lang || null,
                     maxResults: maxResults || null,
                     orderBy: orderBy || null,
-                    pageToken: pageToken || null,
-                    access_token: '{{a}}'
+                    pageToken: pageToken || null
                 },
                 scope: true,
                 parser: 'activity'
@@ -266,11 +259,10 @@ social.addModule("plus", null, {
             return{
                 method: "GET",
                 url: "https://www.googleapis.com/plus/v1/activities/" + activityId + "/comments", 
-                data_mege: {
+                data_merge: {
                     maxResults: maxResults || null,
                     pageToken: pageToken || null,
-                    sortOrder: sortOrder || null,
-                    access_token: '{{a}}'
+                    sortOrder: sortOrder || null
                 },
                 scope: true
             };
@@ -280,14 +272,18 @@ social.addModule("plus", null, {
         getComment: function( commentId ){
             return{
               method: "GET",
-              url: "https://www.googleapis.com/plus/v1/comments/" + commentId + "?access_token={{a}}",
+              url: "https://www.googleapis.com/plus/v1/comments/" + commentId,
               data_merge: null,
               scope: true
             };
         },
 
         me: function(){
-            return this.getPeople( "me" );
+            return this.getPeople( 'me' );
+        },
+        
+        following: function(){
+            return this.listPeople( 'visible', 'me' );
         },
 
         people: function( UserId ){
