@@ -36,10 +36,11 @@ social.addModule('facebook', null, {
         },
 
         profile: function(json){
-            var profile = [];
+            var profile = [],
+                id = 0;
 
             for(var i = 0, l = json.data.length; i < l; i += 1){
-                var id = json.data[i].id;
+                id = json.data[i].id;
                 profile[id] = {};
                     profile[id].id       = id;
                     profile[id].username = json.data[i].username;
@@ -49,8 +50,8 @@ social.addModule('facebook', null, {
                     profile[id].type     = json.data[i].user;
             }
 
-            if(profile.length === 1){
-                profile = profile[0];
+            if(l === 1){
+                profile = profile[id];
             }
 
             return profile;
