@@ -4,6 +4,8 @@
     var _modules = {},
 
     _state = {
+        //date: (new Date((new Date().getTime()) + (new Date().getTimezoneOffset() * 60 * 1000))),
+        date: new Date(),
         module_loaded: [],
         last_time_caching: 0,
         last_time_changed: 0
@@ -27,7 +29,7 @@
 
     temp_client_id = [],
 
-	auth_url = null,
+	_window_response = null,
 
     in_array = function(s, arr){
         for(var i = 0, m = arr.length; i < m; i += 1){
@@ -54,26 +56,29 @@
     },
 
     _window_open = function(url, callback){
-            var popup = window.open(
+        var width = screen.width / 2,
+            height = screen.height / 2;
+
+        chrome.app.window.create("socialjs/popup.html?u=" + url, {
+            minWidth: width,
+            maxWidth: width,
+            minHeight: height,
+            maxHeight: height
+        });
+            /*var popup = window.open(
                 url,
                 'Authentication',
-                "resizeable=true,height=550,width=500,left="+ ((window.innerWidth - 500) / 2) + ",top=" + ((window.innerHeight - 550) / 2)
+                "resizeable=true,height=" +  height + ",width=" + width + ",left="+ ((window.innerWidth - width) / 2) + ",top=" + ((window.innerHeight - height) / 2)
             );
 
-            popup.focus();
+            popup.focus();*/
 
             var timer = setInterval(function(){
-                if(popup.closed){
-                    clearInterval(timer);
-                    callback({state:0, error: "The authentication window has been closed"});
-                }
-
-                if(auth_url){
-                    popup.close();
+                if(_window_response){
                     clearInterval(timer); 
 
-                    callback({state: 1, r: auth_url});
-                    auth_url = null;
+                    callback({state: 1, r: _window_response});
+                    _window_response = null;
                 }
             }, 100);
     },
@@ -176,7 +181,7 @@
             }
         }
 
-        _state.last_time_changed = (new Date).getTime();
+        _state.last_time_changed = _state.date.getTime();
     },
 
     loadModule = function( moduleName ){
@@ -222,7 +227,7 @@
         },
 
         clear: function(){
-            delete localStorage.social;
+            //delete localStorage.social;
         },
 
         crypt: function( str ){
@@ -234,7 +239,7 @@
         },
 
         hasCache: function(){
-            return localStorage.hasOwnProperty( 'social' );
+            //return localStorage.hasOwnProperty( 'social' );
         },
 
         store: function( data ){
@@ -247,7 +252,7 @@
 
             this.cacheobject.data = data;
 
-            localStorage.social = JSON.stringify( this.cacheobject );
+            //localStorage.social = JSON.stringify( this.cacheobject );
         },
 
         get: function(){
@@ -255,7 +260,7 @@
                 return;
             }
 
-            var d = JSON.parse( localStorage.social );
+            //var d = JSON.parse( localStorage.social );
 
             if(d.crypt === true){
                 return this.decrypt( d.data );
@@ -289,7 +294,7 @@
 
                 this.store( d );
 
-                _state.last_time_caching = (new Date).getTime();
+                _state.last_time_caching = _state.date.getTime();
             }
 
             if(listeners.hasOwnProperty('saved')){
@@ -299,14 +304,14 @@
     },
 
     _oauth = {
-        oauth1a: {
+        oauth1: {
             generate_nonce: function(){
                 var nonce = '';
-                for(var i = 0; i < 4; i += 1){
-                    nonce += Math.random().toString(36).substring(8);
+                for(var i = 0; i < 3; i += 1){
+                    nonce += Math.random().toString(36).substring(6);
                 }
 
-                return btoa(nonce);
+                return nonce;
             },
 
             authenticate: function( module, callback ){
@@ -316,46 +321,43 @@
 
                 this.request_token( _modules[ module ].oauth.request_token_uri, _modules[ module ].oauth.consumer_key, _modules[ module ].oauth.consumer_secret, _modules[ module ].oauth.signature_method, _modules[ module ].oauth.callback_url, function(data){
                     console.log(data);
-                }, '' );
+                },  null);
             },
 
             request_token: function( uri, consumer_key, consumer_secret, signature_method, oauth_callback, callback, version ){
-                version = version || "";
+                var method = 'GET',
+                    url = 'https://' + uri,
+                    parameters = {
+                        oauth_callback: oauth_callback,
+                        oauth_consumer_key: consumer_key,
+                        oauth_nonce: this.generate_nonce(),
+                        oauth_signature_method: signature_method,
+                        oauth_timestamp: Math.round(+_state.date / 1000),
+                        oauth_version: version || "1.0"
+                    };
 
-                oauth_callback = encodeURIComponent( oauth_callback );
-                consumer_key = encodeURIComponent( consumer_key );
-                nonce = encodeURIComponent( nonce );
-                signature_method = encodeURIComponent( signature_method );
+                parameters.oauth_signature = oauthSignature.generate(method, url, parameters, consumer_secret);
 
-                var url = 'HTTPS://' + uri,
-
-                timestamp = Math.round(new Date().getTime() / 1000),
-                nonce = this.generate_nonce(),
-
-                parameter_string = 'oauth_callback=' + oauth_callback + '&'
-                + 'oauth_consumer_key=' + consumer_key + '&'
-                + 'oauth_nonce=' + nonce + '&'
-                + 'oauth_signature_method=' + signature_method + '&'
-                + 'oauth_timestamp=' + timestamp,
-                signature_base_string = 'POST&' + encodeURIComponent( url ) + '&' + parameter_string,
-                signin_key = encodeURIComponent( consumer_secret ),
-                signature = CryptoJS.HmacSHA1(signature_base_string, signin_key);
-
-                var header_oauth = 'OAuth oauth_nonce=' + nonce + ','
-                + 'oauth_callback=' + oauth_callback + ','
-                + 'oauth_signature_method=' + signature_method + ',' +
-                + 'oauth_timestamp=' + timestamp + ','
-                + 'oauth_consumer_key=' + consumer_key + ','
-                + 'oauth_signature=' + signature + ', oauth_version=1.0';
-                var header = {
+                var header_oauth = 'OAuth oauth_callback="' + encodeURIComponent( parameters.oauth_callback ) + '",'
+                + 'oauth_consumer_key="' + consumer_key + '",'
+                + 'oauth_nonce="' + parameters.oauth_nonce + '",'
+                + 'oauth_signature="' + parameters.oauth_signature + '",'
+                + 'oauth_signature_method="' + signature_method + '",'
+                + 'oauth_timestamp="' + parameters.oauth_timestamp + '",'
+                + 'oauth_version="' + parameters.oauth_version + '"',
+                header = {
                     Authorization: header_oauth
                 };
 
-                _xhr("POST", url, null, header, callback);
+                _xhr(method, url, null, header, callback);
             },
 
             access_token: function( consumer_key, token, signature_method, signature, timestamp, nonce, verifier, callback, version ){
                 //access_token function
+            },
+
+            refresh_token: function(){
+                
             }
         },
 
@@ -382,7 +384,7 @@
                             return;
                         }
 
-                        var authorization_code = decodeURIComponent( response.r ).match( _modules[ module ].oauth.reg_authorization_code );
+                        var authorization_code = decodeURIComponent( response.r.url ).match( _modules[ module ].oauth.reg_authorization_code );
 
                         //if is an desktop app, some api give you token without code
                         if(authorization_code && authorization_code[0] && authorization_code[0].indexOf('access_token=') != -1){
@@ -536,7 +538,7 @@
             if(_settings.hasOwnProperty( key ) && _settings[key] !== value){
                 _settings[ key ] = value;
 
-                _state.last_time_changed = (new Date).getTime();
+                _state.last_time_changed = _state.date.getTime();
             }
         },
 
@@ -544,7 +546,7 @@
             if(_data.hasOwnProperty( api ) && (!_data[ api ].hasOwnProperty( key ) || (_data[ api ][ key ] !== value))){
                 _data[ api ][ key ] = value;
 
-                _state.last_time_changed = (new Date).getTime();
+                _state.last_time_changed = _state.date.getTime();
             }
         },
 
@@ -589,8 +591,8 @@
         },
 
         //popup authentication api
-        setAuthUrl: function( url ){
-            auth_url = url;
+        windowResponse: function(response){
+            _window_response = response;
         },
 
         disconnect: function( module ){
@@ -624,9 +626,11 @@
                 case '2.0':
                     _oauth.oauth2.authenticate( module, callback);
                     break;
-
-                case '1.0a':
-                    _oauth.oauth1a.authenticate( module, callback);
+                case '1.0':
+                    _oauth.oauth1.authenticate( module, callback);
+                    break;
+                default:
+                    throw "This Oauth version doesn't exists";
                     break;
             }
         },
