@@ -69,12 +69,13 @@ social.addModule('facebook', null, {
 
         stream: function(json){
             var stream = {};
-                stream.id               = json.source_id;
-                stream.post_id          = json.post_id;
+                stream.id               = json.post_id;
+                stream.source_id        = json.source_id;
                 stream.time             = json.created_time;
                 stream.description      = json.description;
+                stream.type             = json.type;
                 stream.message          = json.message;
-                stream.attachment       = json.attachment;
+                stream.attachment       = json.attachment.media ? json.attachment : false;
                 stream.can_comment      = json.comment_info.can_comment;
                 stream.comment_count    = json.comment_info.comment_count;
                 stream.comments         = [];
