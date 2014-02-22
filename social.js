@@ -315,16 +315,26 @@
             },
 
             authenticate: function( module, callback ){
-                /*_window_open( "https://" + _modules[ module ].oauth.authenticate_uri, function(data){
-                    console.log(data);
-                } );*/
+                var that = this;
 
-                this.request_token( _modules[ module ].oauth.request_token_uri, _modules[ module ].oauth.consumer_key, _modules[ module ].oauth.consumer_secret, _modules[ module ].oauth.signature_method, _modules[ module ].oauth.callback_url, function(data){
-                    console.log(data);
-                },  null);
+                this.request_token( _modules[ module ].oauth.request_token_uri, _modules[ module ].oauth.consumer_key, _modules[ module ].oauth.consumer_secret, _modules[ module ].oauth.signature_method, _modules[ module ].oauth.callback_url, null, function(r){
+                    var request_token = r.r.match( _modules[ module ].oauth.reg_request_token );
+
+                    _window_open( "https://" + _modules[ module ].oauth.authorize_uri + "?oauth_token=" + request_token[1], function(r){
+                        var request_token = decodeURIComponent( r.r.url ).match( _modules[ module ].oauth.reg_oauth_token );
+
+                        that.access_token( _modules[ module ].oauth.access_token_uri, _modules[ module ].oauth.consumer_key, _modules[ module ].oauth.consumer_secret, _modules[ module ].oauth.signature_method, null, request_token[1], request_token[2], function(r){
+                            var oauth_token = r.r.match( _modules[ module ].oauth.reg_access_token );
+
+                            _modules[ module ].oauth.oauth_token = oauth_token[1];
+                            _modules[ module ].oauth.oauth_token_secret = oauth_token[2];
+                            _modules[ module ].login = true;
+                        });
+                    } );
+                });
             },
 
-            request_token: function( uri, consumer_key, consumer_secret, signature_method, oauth_callback, callback, version ){
+            request_token: function( uri, consumer_key, consumer_secret, signature_method, oauth_callback, version, callback ){
                 var method = 'GET',
                     url = 'https://' + uri,
                     parameters = {
@@ -352,12 +362,60 @@
                 _xhr(method, url, null, header, callback);
             },
 
-            access_token: function( consumer_key, token, signature_method, signature, timestamp, nonce, verifier, callback, version ){
-                //access_token function
+            access_token: function( uri, consumer_key, consumer_secret, signature_method, version, token, verifier, callback ){
+                var method = 'GET',
+                    url = 'https://' + uri,
+                    parameters = {
+                        oauth_consumer_key: consumer_key,
+                        oauth_nonce: this.generate_nonce(),
+                        oauth_signature_method: signature_method,
+                        oauth_timestamp: Math.round(+_state.date / 1000),
+                        oauth_token: token,
+                        oauth_verifier: verifier,
+                        oauth_version: version || "1.0"
+                    };
+
+                parameters.oauth_signature = oauthSignature.generate(method, url, parameters, consumer_secret);
+
+                var header_oauth = 'OAuth oauth_consumer_key="' + consumer_key + '",'
+                + 'oauth_nonce="' + parameters.oauth_nonce + '",'
+                + 'oauth_signature="' + parameters.oauth_signature + '",'
+                + 'oauth_signature_method="' + signature_method + '",'
+                + 'oauth_timestamp="' + parameters.oauth_timestamp + '",'
+                + 'oauth_token="' + parameters.oauth_token + '",'
+                + 'oauth_verifier="' + parameters.oauth_verifier + '",'
+                + 'oauth_version="' + parameters.oauth_version + '"',
+                header = {
+                    Authorization: header_oauth
+                };
+
+                _xhr(method, url, null, header, callback);
             },
 
             refresh_token: function(){
-                
+                //refresh token
+            },
+
+            xhr: function( oauth, parameters, method, url, data, headers, callback ){
+                parameters = parameters || {};
+                parameters.oauth_consumer_key       = oauth.consumer_key;
+                parameters.oauth_nonce              = this.generate_nonce();
+                parameters.oauth_signature_method   = oauth.signature_method;
+                parameters.oauth_timestamp          = Math.round(+_state.date / 1000);
+                parameters.oauth_token              = oauth.oauth_token;
+                parameters.oauth_version            = oauth.version || "1.0";
+                parameters.oauth_signature          = oauthSignature.generate(method, url, parameters, oauth.consumer_secret, oauth.oauth_token_secret);
+
+                headers = headers || {};
+                headers['Authorization'] = 'OAuth oauth_consumer_key="' + parameters.oauth_consumer_key + '",'
+                + 'oauth_nonce="' + parameters.oauth_nonce + '",'
+                + 'oauth_signature="' + parameters.oauth_signature + '",'
+                + 'oauth_signature_method="' + parameters.oauth_signature_method + '",'
+                + 'oauth_timestamp="' + parameters.oauth_timestamp + '",'
+                + 'oauth_token="' + parameters.oauth_token + '",'
+                + 'oauth_version="' + parameters.oauth_version + '"';
+
+                _xhr(method, url, data, headers, callback);
             }
         },
 
@@ -433,6 +491,13 @@
 
             refresh_token: function(){
                 
+            },
+
+            xhr: function( oauth, parameters, method, url, data, headers, callback ){
+                headers = headers || {};
+                headers['Authorization'] = "Bearer " + oauth.access_token;
+
+                _xhr( method, url, data, headers, callback );
             }
         },
 
@@ -733,7 +798,7 @@
                 callback(r);
             };
 
-            _xhr( p.method, p.url, null, {'Authorization': "Bearer " + _modules[ module ].oauth.access_token}, fn );
+            _oauth[ (_modules[ module ].oauth.version == '2.0') ? 'oauth2' : 'oauth1' ].xhr( _modules[ module ].oauth, p.data_merge, p.method, p.url, null, null, fn);
         }
     };
 
