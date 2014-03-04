@@ -14,7 +14,7 @@ var view = document.createElement('webview');
 
 document.body.appendChild(view);
 view.addEventListener('loadcommit', function(view){
-    if(!/https:\/\/(www\.google\.com\/robots\.txt#|www\.facebook\.com\/connect\/login_success\.html)(.*)/.test(view.url)){
+    if(!/https:\/\/(www\.google\.com\/robots\.txt#|www\.facebook\.com\/connect\/login_success\.html|twitter\.com\/robots\.txt\?)(.*)/.test(view.url)){
         return false;
     }
 
