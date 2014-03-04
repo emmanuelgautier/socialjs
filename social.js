@@ -4,7 +4,6 @@
     var _modules = {},
 
     _state = {
-        //date: (new Date((new Date().getTime()) + (new Date().getTimezoneOffset() * 60 * 1000))),
         date: new Date(),
         module_loaded: [],
         last_time_caching: 0,
@@ -89,10 +88,6 @@
         }
 
         var xhr = new XMLHttpRequest();
-
-        /*if("withCredentials" in xhr && method === "GET"){
-            return _jsonp(url + "&callback={{jp}}", callback);
-        }*/
 
         if(method === "POST"){
             var f = new FormData();
@@ -207,8 +202,6 @@
 
             window.social[name].login       = function( fn ){ window.social.login( name, fn); };
             window.social[name].isLogged    = function(){ return window.social.isLogged( name ); };
-            /*window.social[name].set         = function( key, data ){ window.social.cache.set( name, key, data); };
-            window.social[name].get         = function( key ){ return window.social.cache.get( name, key ); };*/
 
         for(var api in _modules[ name ].api){
             //protect some functions
